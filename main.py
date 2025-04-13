@@ -6,67 +6,80 @@ pygame.init()
 WIDTH, HEIGHT = 500, 500
 CELL_SIZE = 20
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
 
-snake = [(100, 100), (90, 100), (80, 100)]
-direction = "RIGHT"
-food = (random.randint(0, WIDTH // CELL_SIZE - 1) * CELL_SIZE,
-        random.randint(0, HEIGHT // CELL_SIZE - 1) * CELL_SIZE)
+class SnakeGame:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.clock = pygame.time.Clock()
+        self.running = True
+        self.snake = [(100, 100), (90, 100), (80, 100)]
+        self.direction = "RIGHT"
+        self.food = self.spawn_food()
+        self.score = 0
+
+    def spawn_food(self):
+        return (random.randint(0, WIDTH // CELL_SIZE - 1) * CELL_SIZE,
+                random.randint(0, HEIGHT // CELL_SIZE - 1) * CELL_SIZE)
+
+    def move(self):
+        head_x, head_y = self.snake[0]
+        if self.direction == "UP":
+            head_y -= CELL_SIZE
+        elif self.direction == "DOWN":
+            head_y += CELL_SIZE
+        elif self.direction == "LEFT":
+            head_x -= CELL_SIZE
+        elif self.direction == "RIGHT":
+            head_x += CELL_SIZE
+
+        new_head = (head_x, head_y)
+
+        if (new_head in self.snake or
+                head_x < 0 or head_x >= WIDTH or
+                head_y < 0 or head_y >= HEIGHT):
+            self.running = False  # Завершаем игру при столкновении
+
+        self.snake.insert(0, new_head)
+
+        if new_head == self.food:
+            self.food = self.spawn_food()
+            self.score += 1
+        else:
+            self.snake.pop()
+
+    def handle_input(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and self.direction != "DOWN":
+                    self.direction = "UP"
+                elif event.key == pygame.K_DOWN and self.direction != "UP":
+                    self.direction = "DOWN"
+                elif event.key == pygame.K_LEFT and self.direction != "RIGHT":
+                    self.direction = "LEFT"
+                elif event.key == pygame.K_RIGHT and self.direction != "LEFT":
+                    self.direction = "RIGHT"
+
+    def render(self):
+        self.screen.fill((0, 0, 0))
+
+        for segment in self.snake:
+            pygame.draw.rect(self.screen, (0, 255, 0), (*segment, CELL_SIZE, CELL_SIZE))
+
+        pygame.draw.rect(self.screen, (255, 0, 0), (*self.food, CELL_SIZE, CELL_SIZE))
+
+        pygame.display.flip()
+
+    def run(self):
+        while self.running:
+            self.handle_input()
+            self.move()
+            self.render()
+            self.clock.tick(10)
+        print(f"Game Over! Your Score: {self.score}")
 
 
-def move():
-    global snake  # direction здесь не нужен, т.к. он не изменяется
-    head_x, head_y = snake[0]
-
-    if direction == "UP":
-        head_y -= CELL_SIZE
-    elif direction == "DOWN":
-        head_y += CELL_SIZE
-    elif direction == "LEFT":
-        head_x -= CELL_SIZE
-    elif direction == "RIGHT":
-        head_x += CELL_SIZE
-
-    snake.insert(0, (head_x, head_y))
-
-    if snake[0] == food:
-        spawn_food()
-    else:
-        snake.pop()
-
-
-def spawn_food():
-    global food
-    food = (random.randint(0, WIDTH // CELL_SIZE - 1) * CELL_SIZE,
-            random.randint(0, HEIGHT // CELL_SIZE - 1) * CELL_SIZE)
-
-
-running = True
-while running:
-    screen.fill((0, 0, 0))
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP and direction != "DOWN":
-                direction = "UP"
-            elif event.key == pygame.K_DOWN and direction != "UP":
-                direction = "DOWN"
-            elif event.key == pygame.K_LEFT and direction != "RIGHT":
-                direction = "LEFT"
-            elif event.key == pygame.K_RIGHT and direction != "LEFT":
-                direction = "RIGHT"
-
-    move()
-
-    for segment in snake:
-        pygame.draw.rect(screen, (0, 255, 0), (*segment, CELL_SIZE, CELL_SIZE))
-
-    pygame.draw.rect(screen, (255, 0, 0), (*food, CELL_SIZE, CELL_SIZE))
-
-    pygame.display.flip()
-    clock.tick(10)
-
+game = SnakeGame()
+game.run()
 pygame.quit()
